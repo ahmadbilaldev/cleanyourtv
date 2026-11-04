@@ -14,7 +14,7 @@ powershell -ExecutionPolicy Bypass -File tools\theme.ps1 -TvHost 192.168.1.50 th
 
 `tools/venv/bin/python -I tools/manage.py list themes` and `list switches` list them from this file, `show <name>` gives one with its
 screenshot, and `manage.py set <switch> <value> --theme <your folder>` writes a key into a theme folder of your own
-and pushes it with `theme.sh` (`theme.ps1` on Windows). The folder has to be outside this checkout: one under `themes/` or `examples/` is
+and pushes it with `theme.sh` (`theme.ps1` on Windows). The folder has to be outside this checkout: one under `themes/`, `examples/` or `my-tv/` is
 refused (copy a theme first), a `config.json` it cannot read is named before anything is written or pushed, and a
 folder that is not there is refused too rather than made - an empty folder of your own is fine, `set` starts the
 `config.json` in it. Pushing replaces the theme on the TV and empties the pictures it pushed before, so a mistyped
@@ -136,6 +136,8 @@ A new key needs one there in the same pull request.
 | `advanced_effects` | bool | Optional lifted tile, icon zoom, smooth ambient colour and app opening effects; false by default |
 | `show_home_settings_shortcut` | bool | Keep the optional Default-home tile visible when the TV has a home picker; false by default |
 | `show_stats` | bool | One line under the clock with CPU, free memory and free storage. Off unless set |
+| `show_bluetooth_pill` | bool | A Bluetooth pill in the top bar that opens the TV's pairing screen (the launcher never scans or pairs itself). Off unless set |
+| `show_ram_pill` | bool | A pill in the top bar with the RAM in use as a percentage, read from the system when the Home screen is in front, nothing otherwise. Off unless set |
 | `game_day` | string | Each team's next game in the F1 panel's place under the clock ("Minnesota Wild at Dallas Stars", "Puck drop in 2h 18m", "Live now"), rotating every few seconds with the F1 weekend when `race_calendar` is on: the package of an add-on that publishes them, such as the Game Day add-on (`io.github.justinnewman.gameday`). The launcher only reads it and stays offline. Off (empty) unless set |
 | `handle_view_inputs` | bool | Answer the system input switcher (`VIEW_INPUTS`, what the remote's Input button becomes) with the Inputs menu, for sets whose stock launcher was its only handler (Hisense huangshan); `false` by default so a TV with its own input picker never gets a chooser |
 | `background_color` | `#RRGGBB` | Colour behind everything; black by default |

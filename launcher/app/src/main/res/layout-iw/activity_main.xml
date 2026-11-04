@@ -354,6 +354,23 @@
                     android:drawableStart="@drawable/ic_settings"
                     android:nextFocusDown="@+id/grid" />
 
+                <!-- show_ram_pill and show_bluetooth_pill: shown only when config or a theme turns them on. -->
+                <TextView
+                    android:id="@+id/btnRam"
+                    style="@style/TopButton"
+                    android:visibility="gone"
+                    android:text="@string/ram"
+                    android:drawableStart="@drawable/ic_memory"
+                    android:nextFocusDown="@+id/grid" />
+
+                <TextView
+                    android:id="@+id/btnBluetooth"
+                    style="@style/TopButton"
+                    android:visibility="gone"
+                    android:text="@string/bluetooth"
+                    android:drawableStart="@drawable/ic_bluetooth"
+                    android:nextFocusDown="@+id/grid" />
+
                 <TextView
                     android:id="@+id/btnLibraryTop"
                     style="@style/TopButtonIcon"
