@@ -1,0 +1,51 @@
+# Xiaomi MiTV-MOSR4 (irobot, MediaTek), Google TV / Android 11 (SDK 30), firmware RTM5.220609.003.1265
+# Applied 2 Nov 2026 with tools/disable.sh in five batches (work/batch*.txt). Everything is DISABLED
+# for user 0, never uninstalled. Owner's choices: Google Assistant and firmware updates OFF, Chromecast kept.
+#
+# Restore everything (re-enables every line below, then the stock launcher and makes it Home):
+#   TV_HOST=<tv ip> tools/restore.sh my-tv/xiaomi-mitv-mosr4/debloat.txt com.google.android.apps.tv.launcherx
+# Re-apply after a firmware update:
+#   TV_HOST=<tv ip> tools/disable.sh my-tv/xiaomi-mitv-mosr4/debloat.txt   (setupwraith needs FORCE_SETUPWRAITH=1, see README)
+#
+# NOT in this list and must stay enabled: com.mitv.livetv (HDMI/source switcher), mitv.service,
+# com.mitv.overseaservice (Netflix key), com.mediatek.*, com.mi.bluetooth, com.google.android.apps.mediashell
+# (Chromecast), com.google.android.tv.remote.service.
+
+# Xiaomi telemetry / attribution
+com.miui.tv.analytics
+com.xiaomi.statistic
+com.xiaomi.tvqs.overseas
+com.google.android.partnersetup
+com.google.android.feedback
+
+# Ad rows, promos and content providers (PatchWall, Mi TV+, Mi channels)
+com.mitv.tvhome.oemtab
+com.mitv.tvhome.michannel
+com.mitv.tvhome.mitvplus
+com.mitv.tvhome.atv
+com.xm.webcontent
+com.mitv.toolhouse
+
+# Retail demo, nagware, Miracast, preloaded apps not in use
+fusion.android.tv.demo
+com.xiaomi.mitv.tvmanager
+com.xiaomo.tv.milegal
+android.autoinstalls.config.xiaomi.amelie
+com.android.printspooler
+com.xiaomi.mitv.smartshare
+com.xiaomi.wfdsinkhelperservice
+com.xiaomi.mimusic2
+com.google.android.play.games
+com.mitv.videoplayer
+com.mitv.gallery
+
+# Firmware updates and Google Assistant, off by the owner's choice (re-enable: pm enable --user 0 <package>)
+com.xiaomi.mitv.updateservice
+com.mitv.upgrader
+com.mitv.ABUpdateStatus
+com.google.android.katniss
+
+# Google TV setup wizard: answers Home ahead of any third-party launcher on this model, so it is off.
+# Re-enable it BEFORE a factory reset (restore.sh does). Disabling it deletes Wi-Fi networks it saved
+# during first setup, so forget + re-join the network in Settings first, then FORCE_SETUPWRAITH=1.
+com.google.android.tungsten.setupwraith

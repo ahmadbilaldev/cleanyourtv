@@ -1,0 +1,22 @@
+{
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.wbd.hbomax",
+    "com.apple.atve.androidtv.appletv"
+  ],
+  "fill_dock": false,
+  "hidden_apps": [
+    "org.droidtv.playtv",
+    "com.android.tv.settings"
+  ],
+  "live_tv_package": "org.droidtv.playtv",
+  "app_keys": [
+    "813:com.gathin.tvhome"
+  ],
+  "show_bluetooth_pill": true,
+  "show_ram_pill": true,
+  "icon_only_buttons": true,
+  "clock_format": "24",
+  "date_below_clock": true
+}

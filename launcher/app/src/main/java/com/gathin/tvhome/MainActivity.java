@@ -208,6 +208,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
     private final Runnable turnTick = this::updatePanel;
     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
     private boolean showStats;
+    /** config.xml show_ram_pill: a top-bar pill with RAM in use as a percentage, read with the stats timer. */
+    private boolean showRamPill;
+    private TextView btnRam;
+    private View btnBluetooth;
     /** config.xml inputs_connected_only: the Inputs menu lists only connected inputs, the rest behind "More inputs". */
     private boolean inputsConnectedOnly;
     /** config.xml inputs_cec_state_only: only CEC device rows show a connection state, bare HDMI ports none. */
@@ -839,6 +843,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
         });
         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
+        btnBluetooth = findViewById(R.id.btnBluetooth);
+        btnBluetooth.setVisibility(cfg.showBluetoothPill ? View.VISIBLE : View.GONE);
+        btnBluetooth.setOnClickListener(v -> openBluetooth());
+        btnRam = findViewById(R.id.btnRam);
+        showRamPill = cfg.showRamPill;
+        btnRam.setVisibility(showRamPill ? View.VISIBLE : View.GONE);
+        btnRam.setOnClickListener(v -> open(systemIntent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS)));
         addTopBarApps(cfg.topBarApps, cfg.launchActions);
         iconOnlyButtons = cfg.iconOnlyButtons;
         topMenu = cfg.topMenu;
@@ -873,6 +884,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             if (cfg.wifiLabelWidth > 0) btnWifi.setMaxWidth(Math.round(cfg.wifiLabelWidth * density));
             else makeIconOnly(btnWifi);
             makeIconOnly((TextView) btnSettings);
+            makeIconOnly((TextView) btnBluetooth);   // the Bluetooth glyph needs no label; RAM keeps its figure
         }
         if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);
         iconOnlyVpn = vpnPill && cfg.iconOnlyVpn;
@@ -909,6 +921,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnSettings.setOnKeyListener(pillKeys);
         btnReorder.setOnKeyListener(pillKeys);
         btnLibraryTop.setOnKeyListener(pillKeys);
+        btnBluetooth.setOnKeyListener(pillKeys);
+        btnRam.setOnKeyListener(pillKeys);
         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
         if (advancedEffects) {
             List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
@@ -1123,7 +1137,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             updateInputsButton();
             pillsShown = true;
         }
-        if (showStats) startStats();
+        if (showStats || showRamPill) startStats();
         if (gameDay != null) gameDay.start();
         sky.update();
         wallpaperPlayer.start();
@@ -2241,7 +2255,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
 
     private void startStats() {
         if (statsThread != null) return;
-        stats.setVisibility(View.VISIBLE);
+        if (showStats) stats.setVisibility(View.VISIBLE);
         cpuTotalPrev = -1;
         idlePrev = -1;
         procStatDead = false;
@@ -2255,9 +2269,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
             @Override
             public void run() {
                 if (statsBg != bg) return;
-                String line = readStatsLine();
+                String line = showStats ? readStatsLine() : "";
+                long[] mem = showRamPill ? memUsedOfTotalMb() : null;
                 handler.post(() -> {
                     if (showStats && stats != null && statsBg == bg) stats.setText(line);
+                    if (showRamPill && btnRam != null && mem != null && mem[1] > 0 && statsBg == bg)
+                        btnRam.setText(getString(R.string.ram_percent, Math.round(100f * mem[0] / mem[1])));
                 });
                 if (statsBg == bg) bg.postDelayed(this, STATS_MS);
             }
@@ -3177,6 +3194,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
         btnVpn.setVisibility(View.VISIBLE);
     }
 
+
+    /** The Bluetooth pill: Google TV's pairing screen (what the stock launcher's "Pair accessory" opens), else the
+     *  standard Bluetooth settings, else the Settings app. */
+    private void openBluetooth() {
+        PackageManager pm = getPackageManager();
+        for (String action : new String[]{"com.google.android.intent.action.CONNECT_INPUT", Settings.ACTION_BLUETOOTH_SETTINGS}) {
+            Intent i = new Intent(action);
+            if (pm.resolveActivity(i, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                open(i);
+                return;
+            }
+        }
+        open(systemIntent(Settings.ACTION_SETTINGS));
+    }
 
     /** Every settings entry shares the standard intent and the vendor fallback (SystemSettings). */
     private Intent systemIntent(String standardAction) {

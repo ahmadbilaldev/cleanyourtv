@@ -1,0 +1,19 @@
+{
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.amazon.amazonvideo.livingroom"
+  ],
+  "fill_dock": true,
+  "hidden_apps": [
+    "com.tcl.tv",
+    "com.tcl.gallery",
+    "com.android.tv.settings"
+  ],
+  "live_tv_package": "com.tcl.tv",
+  "show_bluetooth_pill": true,
+  "show_ram_pill": true,
+  "icon_only_buttons": true,
+  "clock_format": "12",
+  "date_below_clock": true
+}

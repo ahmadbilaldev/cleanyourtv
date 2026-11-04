@@ -1,0 +1,335 @@
+diff --git a/launcher/app/src/main/AndroidManifest.xml b/launcher/app/src/main/AndroidManifest.xml
+index ca18afa9..2ea8b178 100644
+--- a/launcher/app/src/main/AndroidManifest.xml
++++ b/launcher/app/src/main/AndroidManifest.xml
+@@ -9,6 +9,9 @@
+ 
+     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
++    <!-- show_bluetooth_pill: Google TV's pairing screen (AddAccessoryActivity) refuses callers without it on Android 11.
++         A normal permission, granted at install; nothing in the launcher scans or pairs. -->
++    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+     <!-- Needed since Android 10 to read the Wi-Fi network name for the network pill. Never requested at
+          runtime: build-and-install grants it with pm grant, so lint's Android 12 "ask for COARSE with
+          FINE" rule does not apply here. -->
+@@ -38,6 +41,13 @@
+         <intent>
+             <action android:name="android.settings.MANAGE_APPLICATIONS_SETTINGS" />
+         </intent>
++        <!-- show_bluetooth_pill: the pairing screen on Google TV, else the standard Bluetooth settings. -->
++        <intent>
++            <action android:name="com.google.android.intent.action.CONNECT_INPUT" />
++        </intent>
++        <intent>
++            <action android:name="android.settings.BLUETOOTH_SETTINGS" />
++        </intent>
+         <!-- The tile menu and the app library offer App info only where this resolves (SystemSettings.appInfo). -->
+         <intent>
+             <action android:name="android.settings.APPLICATION_DETAILS_SETTINGS" />
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/Config.java b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+index feb5a816..fddc3f28 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/Config.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/Config.java
+@@ -152,6 +152,10 @@ final class Config {
+     final boolean showHomeSettingsShortcut;
+     /** One line under the clock: CPU, free memory, free storage. Off unless config or a theme turns it on. */
+     final boolean showStats;
++    /** Top-bar pills, off unless config or a theme turns them on: Bluetooth opens the TV's pairing screen,
++     *  RAM shows memory in use as a percentage (read on the show_stats timer, only while Home is on screen). */
++    final boolean showBluetoothPill;
++    final boolean showRamPill;
+     /** game_day: the package of an add-on that publishes each team's next game (GameDay); empty = off. */
+     final String gameDay;
+     /** App library pill after the last Home row (config.xml app_library). */
+@@ -284,7 +288,7 @@ final class Config {
+                    String sourcePanelExtra, boolean coocaaSources, String inputAction, List<String> inputSources,
+                    String inputUriScheme, int columns, int rowsBelowDock, boolean animations, boolean advancedEffects,
+                    boolean shamsiDate, String greetingName, boolean moduleCards, boolean reducedMotion, boolean bootToLiveTv, boolean openOnStartChoice, boolean dockTitle, boolean dockRow, boolean topMenu, boolean launcherSettingsButton, boolean reorderButton, boolean showNetworkPill, boolean showInputsPill, boolean iconOnlyButtons, boolean iconOnlyInputs, boolean libraryButton, boolean showLibraryPill, int wifiLabelWidth, boolean alwaysShowNames, boolean wallpaperTrueColor, boolean focusOvershoot, String vpnApp,
+-                   boolean showHomeSettingsShortcut, boolean showStats, String gameDay, boolean appLibrary, boolean appLibrarySelection, boolean libraryOkOpens, boolean uniformTiles, int backgroundColor, int skyIntensity,
++                   boolean showHomeSettingsShortcut, boolean showStats, boolean showBluetoothPill, boolean showRamPill, String gameDay, boolean appLibrary, boolean appLibrarySelection, boolean libraryOkOpens, boolean uniformTiles, int backgroundColor, int skyIntensity,
+                    int[] settingsKeycodes, boolean settingsKeyPanel, boolean restoreKeyServices, boolean wallpaperEnabled, File wallpaper, List<File> wallpapers,
+                    int wallpaperRotationMinutes, int wallpaperDim, int dockOpacity, String wallpaperOrder, boolean overlayApplied,
+                    Festival festival, int[] inputKeycodes, List<String> appKeys, String stockHomeRedirect,
+@@ -353,6 +357,8 @@ final class Config {
+         this.vpnApp = vpnApp;
+         this.showHomeSettingsShortcut = showHomeSettingsShortcut;
+         this.showStats = showStats;
++        this.showBluetoothPill = showBluetoothPill;
++        this.showRamPill = showRamPill;
+         this.gameDay = gameDay;
+         this.appLibrary = appLibrary;
+         this.appLibrarySelection = appLibrarySelection;
+@@ -486,6 +492,8 @@ final class Config {
+         String vpn = res.getString(R.string.vpn_app).trim();
+         boolean homeSettings = res.getBoolean(R.bool.show_home_settings_shortcut);
+         boolean showStats = res.getBoolean(R.bool.show_stats);
++        boolean showBluetoothPill = res.getBoolean(R.bool.show_bluetooth_pill);
++        boolean showRamPill = res.getBoolean(R.bool.show_ram_pill);
+         String gameDay = res.getString(R.string.game_day).trim();
+         boolean library = res.getBoolean(R.bool.app_library);
+         boolean librarySelection = res.getBoolean(R.bool.app_library_selection);
+@@ -600,6 +608,8 @@ final class Config {
+             vpn = string(json, "vpn_app", vpn);
+             homeSettings = bool(json, "show_home_settings_shortcut", homeSettings);
+             showStats = bool(json, "show_stats", showStats);
++            showBluetoothPill = bool(json, "show_bluetooth_pill", showBluetoothPill);
++            showRamPill = bool(json, "show_ram_pill", showRamPill);
+             gameDay = string(json, "game_day", gameDay);
+             library = bool(json, "app_library", library);
+             librarySelection = bool(json, "app_library_selection", librarySelection);
+@@ -706,7 +716,7 @@ final class Config {
+                 Math.max(0, rowsBelow), animations, advancedEffects, shamsi, greetingName, moduleCards, reducedMotion, bootToLiveTv,
+                 openOnStartChoice, dockTitle, dockRow, topMenu, launcherSettingsButton, reorderButton, showNetworkPill, showInputsPill,
+                 iconOnlyButtons, iconOnlyInputs, libraryButton, showLibraryPill, wifiLabelWidth, alwaysShowNames, wallpaperTrueColor, focusOvershoot,
+-                vpn, homeSettings, showStats, gameDay, library, librarySelection, libraryOkOpens, uniformTiles, background,
++                vpn, homeSettings, showStats, showBluetoothPill, showRamPill, gameDay, library, librarySelection, libraryOkOpens, uniformTiles, background,
+                 Math.max(0, Math.min(100, skyIntensity)), settingsKeycodes, settingsKeyPanel, restoreKeyServices, wallpaperEnabled, wallpaper,
+                 wallpapers, rotationMinutes, wallpaperDim, dockOpacity, wallpaperOrder, applied, festival, inputKeycodes, appKeys, stockHomeRedirect,
+                 json == null ? Collections.emptyList() : raceCalendar(json), cinematic, ambientGlow, appGlow, fadeRows,
+diff --git a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+index 12fc3090..9bb7862f 100644
+--- a/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
++++ b/launcher/app/src/main/java/com/gathin/tvhome/MainActivity.java
+@@ -208,6 +208,10 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     private final Runnable turnTick = this::updatePanel;
+     /** config.xml show_stats, overridable by a theme. Off: the line is gone and nothing is read. */
+     private boolean showStats;
++    /** config.xml show_ram_pill: a top-bar pill with RAM in use as a percentage, read with the stats timer. */
++    private boolean showRamPill;
++    private TextView btnRam;
++    private View btnBluetooth;
+     /** config.xml inputs_connected_only: the Inputs menu lists only connected inputs, the rest behind "More inputs". */
+     private boolean inputsConnectedOnly;
+     /** config.xml inputs_cec_state_only: only CEC device rows show a connection state, bare HDMI ports none. */
+@@ -839,6 +843,13 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             libraryFromTopBar = true;   // closing it goes back to this button, not to the pill after the last row
+         });
+         btnLibraryTop.setVisibility(cfg.libraryButton && cfg.appLibrary ? View.VISIBLE : View.GONE);
++        btnBluetooth = findViewById(R.id.btnBluetooth);
++        btnBluetooth.setVisibility(cfg.showBluetoothPill ? View.VISIBLE : View.GONE);
++        btnBluetooth.setOnClickListener(v -> openBluetooth());
++        btnRam = findViewById(R.id.btnRam);
++        showRamPill = cfg.showRamPill;
++        btnRam.setVisibility(showRamPill ? View.VISIBLE : View.GONE);
++        btnRam.setOnClickListener(v -> open(systemIntent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS)));
+         addTopBarApps(cfg.topBarApps, cfg.launchActions);
+         iconOnlyButtons = cfg.iconOnlyButtons;
+         topMenu = cfg.topMenu;
+@@ -873,6 +884,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             if (cfg.wifiLabelWidth > 0) btnWifi.setMaxWidth(Math.round(cfg.wifiLabelWidth * density));
+             else makeIconOnly(btnWifi);
+             makeIconOnly((TextView) btnSettings);
++            makeIconOnly((TextView) btnBluetooth);   // the Bluetooth glyph needs no label; RAM keeps its figure
+         }
+         if (cfg.iconOnlyInputs) makeIconOnly((TextView) btnInputs);
+         iconOnlyVpn = vpnPill && cfg.iconOnlyVpn;
+@@ -909,6 +921,8 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+         btnSettings.setOnKeyListener(pillKeys);
+         btnReorder.setOnKeyListener(pillKeys);
+         btnLibraryTop.setOnKeyListener(pillKeys);
++        btnBluetooth.setOnKeyListener(pillKeys);
++        btnRam.setOnKeyListener(pillKeys);
+         for (View button : topAppButtons) button.setOnKeyListener(pillKeys);
+         if (advancedEffects) {
+             List<View> pills = new ArrayList<>(Arrays.asList(btnInputs, btnWifi, btnVpn, btnReorder, btnLibraryTop, btnSettings));
+@@ -1123,7 +1137,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             updateInputsButton();
+             pillsShown = true;
+         }
+-        if (showStats) startStats();
++        if (showStats || showRamPill) startStats();
+         if (gameDay != null) gameDay.start();
+         sky.update();
+         wallpaperPlayer.start();
+@@ -2241,7 +2255,7 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+ 
+     private void startStats() {
+         if (statsThread != null) return;
+-        stats.setVisibility(View.VISIBLE);
++        if (showStats) stats.setVisibility(View.VISIBLE);
+         cpuTotalPrev = -1;
+         idlePrev = -1;
+         procStatDead = false;
+@@ -2255,9 +2269,12 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+             @Override
+             public void run() {
+                 if (statsBg != bg) return;
+-                String line = readStatsLine();
++                String line = showStats ? readStatsLine() : "";
++                long[] mem = showRamPill ? memUsedOfTotalMb() : null;
+                 handler.post(() -> {
+                     if (showStats && stats != null && statsBg == bg) stats.setText(line);
++                    if (showRamPill && btnRam != null && mem != null && mem[1] > 0 && statsBg == bg)
++                        btnRam.setText(getString(R.string.ram_percent, Math.round(100f * mem[0] / mem[1])));
+                 });
+                 if (statsBg == bg) bg.postDelayed(this, STATS_MS);
+             }
+@@ -3178,6 +3195,20 @@ public class MainActivity extends Activity implements AppAdapter.TileListener {
+     }
+ 
+ 
++    /** The Bluetooth pill: Google TV's pairing screen (what the stock launcher's "Pair accessory" opens), else the
++     *  standard Bluetooth settings, else the Settings app. */
++    private void openBluetooth() {
++        PackageManager pm = getPackageManager();
++        for (String action : new String[]{"com.google.android.intent.action.CONNECT_INPUT", Settings.ACTION_BLUETOOTH_SETTINGS}) {
++            Intent i = new Intent(action);
++            if (pm.resolveActivity(i, PackageManager.MATCH_DEFAULT_ONLY) != null) {
++                open(i);
++                return;
++            }
++        }
++        open(systemIntent(Settings.ACTION_SETTINGS));
++    }
++
+     /** Every settings entry shares the standard intent and the vendor fallback (SystemSettings). */
+     private Intent systemIntent(String standardAction) {
+         return SystemSettings.intent(this, standardAction);
+diff --git a/launcher/app/src/main/res/drawable/ic_bluetooth.xml b/launcher/app/src/main/res/drawable/ic_bluetooth.xml
+new file mode 100644
+index 00000000..a681e2cd
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/ic_bluetooth.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="22dp" android:height="22dp"
++    android:viewportWidth="24" android:viewportHeight="24">
++    <path android:fillColor="#FFFFFFFF"
++        android:pathData="M17.71,7.71L12,2h-1v7.59L6.41,5 5,6.41 10.59,12 5,17.59 6.41,19 11,14.41V22h1l5.71,-5.71 -4.3,-4.29 4.3,-4.29zM13,5.83l1.88,1.88L13,9.59V5.83zm1.88,10.46L13,18.17v-3.76l1.88,1.88z" />
++</vector>
+diff --git a/launcher/app/src/main/res/drawable/ic_memory.xml b/launcher/app/src/main/res/drawable/ic_memory.xml
+new file mode 100644
+index 00000000..ebe0ac06
+--- /dev/null
++++ b/launcher/app/src/main/res/drawable/ic_memory.xml
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="utf-8"?>
++<vector xmlns:android="http://schemas.android.com/apk/res/android"
++    android:width="22dp" android:height="22dp"
++    android:viewportWidth="24" android:viewportHeight="24">
++    <path android:fillColor="#FFFFFFFF"
++        android:pathData="M15,9L9,9v6h6L15,9zM13,13h-2v-2h2v2zM21,11L21,9h-2L19,7c0,-1.1 -0.9,-2 -2,-2h-2L15,3h-2v2h-2L11,3L9,3v2L7,5c-1.1,0 -2,0.9 -2,2v2L3,9v2h2v2L3,13v2h2v2c0,1.1 0.9,2 2,2h2v2h2v-2h2v2h2v-2h2c1.1,0 2,-0.9 2,-2v-2h2v-2h-2v-2h2zM17,17L7,17L7,7h10v10z" />
++</vector>
+diff --git a/launcher/app/src/main/res/layout/activity_main.xml b/launcher/app/src/main/res/layout/activity_main.xml
+index 70c6de30..e16c9255 100644
+--- a/launcher/app/src/main/res/layout/activity_main.xml
++++ b/launcher/app/src/main/res/layout/activity_main.xml
+@@ -372,6 +372,23 @@
+                     android:drawableStart="@drawable/ic_apps_pill"
+                     android:nextFocusDown="@+id/grid" />
+ 
++                <!-- show_bluetooth_pill and show_ram_pill: shown only when config or a theme turns them on. -->
++                <TextView
++                    android:id="@+id/btnBluetooth"
++                    style="@style/TopButton"
++                    android:visibility="gone"
++                    android:text="@string/bluetooth"
++                    android:drawableStart="@drawable/ic_bluetooth"
++                    android:nextFocusDown="@+id/grid" />
++
++                <TextView
++                    android:id="@+id/btnRam"
++                    style="@style/TopButton"
++                    android:visibility="gone"
++                    android:text="@string/ram"
++                    android:drawableStart="@drawable/ic_memory"
++                    android:nextFocusDown="@+id/grid" />
++
+                 <TextView
+                     android:id="@+id/btnSettings"
+                     style="@style/TopButton"
+diff --git a/launcher/app/src/main/res/values/config.xml b/launcher/app/src/main/res/values/config.xml
+index 2255d16f..d0023358 100644
+--- a/launcher/app/src/main/res/values/config.xml
++++ b/launcher/app/src/main/res/values/config.xml
+@@ -18,9 +18,8 @@
+     <!-- Apps pinned to the dock row at the bottom, in this order. Missing apps are skipped. -->
+     <string-array name="dock_apps">
+         <item>com.netflix.ninja</item>
+-        <item>com.amazon.amazonvideo.livingroom</item>
+         <item>com.google.android.youtube.tv</item>
+-        <item>in.startv.hotstar</item>
++        <item>com.amazon.amazonvideo.livingroom</item>
+     </string-array>
+     <!-- With fewer dock_apps than columns (or a dock app that is not installed), the free dock slots take
+          the first grid apps, so the dock never shows a gap. false leaves them empty (#162); a theme can
+@@ -30,11 +29,13 @@
+     <!-- Apps never shown as tiles (e.g. the Live TV app, which the Inputs menu already covers). -->
+     <string-array name="hidden_apps">
+         <item>com.mediatek.wwtv.tvcenter</item>
++        <item>com.mitv.livetv</item>
+         <item>com.mitv.gallery</item>
++        <item>com.android.tv.settings</item>
+     </string-array>
+ 
+     <!-- The TV's Live TV / tuner app, offered at the end of the Inputs menu. Leave empty to omit. -->
+-    <string name="live_tv_package" translatable="false">com.mediatek.wwtv.tvcenter</string>
++    <string name="live_tv_package" translatable="false">com.mitv.livetv</string>
+ 
+     <!-- Open the Live TV app above the first time Home comes up after the TV is switched on, for sets that are
+          mostly used for broadcast TV. Once per boot: Home after that stays Home. Can also be set with
+@@ -256,7 +257,7 @@
+     <bool name="lunar_date">false</bool>
+     <!-- The date (with the Shamsi and lunar lines) on its own line under the clock instead of beside it, for a top bar
+          whose pills leave the date too little room. Can also be set with "date_below_clock" in a theme. -->
+-    <bool name="date_below_clock">false</bool>
++    <bool name="date_below_clock">true</bool>
+     <!-- The language the launcher shows itself in, as a language tag ("vi", "pt-BR", "ar-EG-u-nu-latn"
+          for Arabic with Western digits), instead of the TV's. For firmware
+          that has no menu entry for the owner's language although the launcher is translated into it (a China-market
+@@ -314,7 +315,7 @@
+     <bool name="reorder_button">false</bool>
+     <!-- Wi-Fi and Settings as round icon-only buttons (the network name moves to the talkback description);
+          Inputs keeps its label. -->
+-    <bool name="icon_only_buttons">false</bool>
++    <bool name="icon_only_buttons">true</bool>
+     <!-- The Inputs pill as a round icon button too (the label moves to the talkback description). -->
+     <bool name="icon_only_inputs">false</bool>
+     <!-- With vpn_pill, the VPN pill as a round icon button too: an open lock on the plain glass button while no VPN is
+@@ -324,7 +325,7 @@
+     <!-- The launcher's clocks (Home, the clock screensaver and the Clock screen) in 12- or 24-hour time whatever the TV
+          is set to: "12", "24", or "system", the default, which follows the TV. Launcher settings' Clock row overrides
+          it, and a theme can set "clock_format": "24". -->
+-    <string name="clock_format" translatable="false">system</string>
++    <string name="clock_format" translatable="false">12</string>
+     <!-- true colours the Wi-Fi pill's icon green while the TV is online and leaves it white while it is not (dark on
+          the focused pill either way), so the connection shows at a glance, also as an icon-only button. Can also be
+          set with "wifi_status_color": true in a theme's config.json. -->
+@@ -341,7 +342,7 @@
+     <bool name="show_library_pill">true</bool>
+     <!-- With icon_only_buttons: keep the network name on the Wi-Fi pill up to this width in dp, cut with an ellipsis.
+          0 leaves the Wi-Fi pill as an icon. -->
+-    <integer name="wifi_label_width">0</integer>
++    <integer name="wifi_label_width">160</integer>
+ 
+     <!-- The Wi-Fi/Ethernet pill in the top bar. false hides it (on Android 14 with Location off it can
+          only say "Wi-Fi", not the network name). Can also be set with "show_network_pill" in a theme. -->
+@@ -457,6 +458,13 @@
+          "show_stats": true. Nothing is read, and the clock does not move, while this is false. -->
+     <bool name="show_stats">false</bool>
+ 
++    <!-- A Bluetooth pill in the top bar, left of Settings: opens the TV's pairing / accessories screen. Off by
++         default; a theme can set "show_bluetooth_pill": true. -->
++    <bool name="show_bluetooth_pill">true</bool>
++    <!-- A RAM pill in the top bar showing memory in use as a percentage, refreshed every 10 s while Home is on
++         screen (nothing is read otherwise). Off by default; a theme can set "show_ram_pill": true. -->
++    <bool name="show_ram_pill">true</bool>
++
+     <!-- Each team's next game in the F1 panel's place under the clock, rotating with the theme's F1 weekend: the package
+          of an add-on that publishes them (the Game Day add-on: io.github.justinnewman.gameday; contract in docs/modules.md).
+          Empty = off: nothing is read or watched. The launcher only reads what the add-on publishes and never goes
+diff --git a/launcher/app/src/main/res/values/strings.xml b/launcher/app/src/main/res/values/strings.xml
+index 2b2b53eb..0efac4aa 100644
+--- a/launcher/app/src/main/res/values/strings.xml
++++ b/launcher/app/src/main/res/values/strings.xml
+@@ -41,6 +41,9 @@
+     <string name="stats_cpu">CPU %1$d%%</string>
+     <string name="stats_memory">Memory %1$d / %2$d MB</string>
+     <string name="stats_storage">Storage %1$s free</string>
++    <string name="bluetooth" translatable="false">Bluetooth</string>
++    <string name="ram" translatable="false">RAM</string>
++    <string name="ram_percent" translatable="false">RAM %1$d%%</string>
+     <string name="storage_gb_whole">%1$.0f GB</string>
+     <string name="storage_gb_decimal">%1$.1f GB</string>
+     <string name="dream_name">Clock</string>

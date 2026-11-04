@@ -1,0 +1,19 @@
+{
+  "dock_apps": [
+    "com.netflix.ninja",
+    "com.google.android.youtube.tv",
+    "com.amazon.amazonvideo.livingroom",
+    "in.startv.hotstar"
+  ],
+  "fill_dock": true,
+  "hidden_apps": [
+    "com.sony.dtv.tvx",
+    "com.android.tv.settings"
+  ],
+  "live_tv_package": "com.sony.dtv.tvx",
+  "show_bluetooth_pill": true,
+  "show_ram_pill": false,
+  "icon_only_buttons": true,
+  "clock_format": "12",
+  "date_below_clock": true
+}
